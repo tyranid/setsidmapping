@@ -1,11 +1,14 @@
 # SetSidMapping.
-Simple tool to use LsaManageSidNameMapping get LSA to add or remove SID to name mappings.
 
-To use you need to have SeTcbPrivilege and the SID you map names to must meet the following
+Copyright (C) 2020 - James Forshaw.
+
+Simple tool to use *LsaManageSidNameMapping* get LSA to add or remove SID to name mappings.
+
+To use you need to have *SeTcbPrivilege* and the SID you map a name to must meet the following
 criteria.
 
 - The SID security authority must be NT (5)
-- The first RID of the SID must be between 80 and 111.
+- The first RID of the SID must be between 80 and 111 inclusive.
 - You must register a domain SID first.
 
 ## Examples
