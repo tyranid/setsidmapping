@@ -91,14 +91,14 @@ namespace SetSidMapping
         internal static extern int LsaManageSidNameMapping(
             LSA_SID_NAME_MAPPING_OPERATION_TYPE OperationType,
             in LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT OperationInput,
-            out LSA_SID_NAME_MAPPING_OPERATION_ERROR OperationOutput
+            out IntPtr OperationOutput
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int LsaManageSidNameMapping(
             LSA_SID_NAME_MAPPING_OPERATION_TYPE OperationType,
             in LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT OperationInput,
-            out LSA_SID_NAME_MAPPING_OPERATION_ERROR OperationOutput
+            out IntPtr OperationOutput
         );
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
@@ -113,6 +113,9 @@ namespace SetSidMapping
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern IntPtr LocalFree(IntPtr hMem);
 
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern int LsaFreeMemory(IntPtr Buffer);
+
         static IntPtr ParseSid(string sid)
         {
             if (!ConvertStringSidToSidW(sid, out IntPtr ptr))
@@ -125,6 +128,7 @@ namespace SetSidMapping
         static void RemoveSidName(string name)
         {
             LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_REMOVE_INPUT();
+            IntPtr output = IntPtr.Zero;
             try
             {
                 int index = name.IndexOf('\\');
@@ -139,7 +143,7 @@ namespace SetSidMapping
                 }
 
                 int status = LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Remove,
-                    input, out LSA_SID_NAME_MAPPING_OPERATION_ERROR _);
+                    input, out output);
                 if (status < 0)
                     throw new Win32Exception(RtlNtStatusToDosErrorNoTeb(status));
             }
@@ -147,11 +151,17 @@ namespace SetSidMapping
             {
                 Console.WriteLine("Error adding {0} - {1}", name, ex.Message);
             }
+            finally
+            {
+                if (output != IntPtr.Zero)
+                    LsaFreeMemory(output);
+            }
         }
 
         static void AddSidName(string name)
         {
             LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT input = new LSA_SID_NAME_MAPPING_OPERATION_ADD_INPUT();
+            IntPtr output = IntPtr.Zero;
             try
             {
                 string[] parts = name.Split('=');
@@ -174,7 +184,7 @@ namespace SetSidMapping
                 }
 
                 int status = LsaManageSidNameMapping(LSA_SID_NAME_MAPPING_OPERATION_TYPE.LsaSidNameMappingOperation_Add,
-                    input, out LSA_SID_NAME_MAPPING_OPERATION_ERROR _);
+                    input, out output);
                 if (status < 0)
                     throw new Win32Exception(RtlNtStatusToDosErrorNoTeb(status));
             }
@@ -187,6 +197,10 @@ namespace SetSidMapping
                 if (input.Sid != IntPtr.Zero)
                 {
                     LocalFree(input.Sid);
+                }
+                if (output != IntPtr.Zero)
+                {
+                    LsaFreeMemory(output);
                 }
             }
         }
